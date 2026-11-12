@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titus Class - Competition System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Tajawal', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(rgba(9, 13, 22, 0.86), rgba(9, 13, 22, 0.90)),
+                        url('https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Divine_Mercy_Image_from_Sanctuary_in_Krak%C3%B3w-Borek_Fa%C5%82%C4%99cki.jpg/800px-Divine_Mercy_Image_from_Sanctuary_in_Krak%C3%B3w-Borek_Fa%C5%82%C4%99cki.jpg') center/cover fixed;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        .arabic-text {
+            font-family: 'Tajawal', sans-serif;
+            direction: rtl;
+        }
+
+        /* Smooth Terminal Slide Animation */
+        .terminal-drawer {
+            transform: translate(-50%, -130%);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
+        }
+
+        .terminal-drawer.open {
+            transform: translate(-50%, 0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(245, 158, 11, 0.4);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Top Navigation Bar -->
+    <header class="w-full px-4 sm:px-8 py-4 flex justify-between items-center bg-slate-950/75 backdrop-blur-md border-b border-white/10 sticky top-0 z-40">
+        <div class="flex items-center gap-3 text-amber-500 font-black text-xl sm:text-2xl tracking-wide">
+            <i class="fa-solid fa-cross"></i>
+            <span>Titus Class</span>
+        </div>
+
+        <div class="flex items-center gap-3 sm:gap-4">
+            <!-- Active User Pill -->
+            <div id="user-badge-container" class="hidden items-center gap-2 bg-slate-900/90 border border-white/10 px-3 py-1.5 rounded-full text-sm font-semibold text-slate-200">
+                <span id="header-username"></span>
+                <span id="header-creator-tag" class="hidden items-center gap-1 bg-sky-500/20 border border-sky-400 text-sky-400 px-2 py-0.5 rounded-full text-xs font-bold">
+                    <i class="fa-solid fa-circle-check"></i> Creator
+                </span>
+            </div>
+
+            <!-- Secret 3-Dots Terminal Trigger -->
+            <button id="terminal-trigger" title="Options" class="p-3 rounded-xl text-slate-200 hover:text-amber-400 hover:bg-white/10 transition active:scale-95">
+                <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
+            </button>
+
+            <!-- Sign Out Button -->
+            <button id="logout-btn" class="hidden bg-rose-600 hover:bg-rose-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition shadow-lg shadow-rose-950/50">
+                Sign Out
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 w-full max-w-5xl mx-auto px-4 py-8 flex flex-col justify-center">
+
+        <!-- Loading Spinner -->
+        <div id="loading-view" class="flex flex-col items-center justify-center py-20 gap-4">
+            <i class="fa-solid fa-circle-notch fa-spin text-4xl text-amber-500"></i>
+            <p class="text-slate-300 font-medium text-sm tracking-wide">Connecting to Database...</p>
+        </div>
+
+        <!-- Authentication Card (Sign Up & Sign In) -->
+        <section id="auth-view" class="hidden w-full max-w-md mx-auto bg-slate-900/85 backdrop-blur-xl border border-white/15 rounded-2xl p-6 sm:p-8 shadow-2xl">
+            <div class="grid grid-cols-2 gap-2 bg-slate-950/70 p-1.5 rounded-xl mb-6 border border-white/5">
+                <button id="tab-signin" type="button" class="py-2.5 rounded-lg font-bold text-sm transition bg-amber-500 text-slate-950">
+                    Sign In
+                </button>
+                <button id="tab-signup" type="button" class="py-2.5 rounded-lg font-bold text-sm transition text-slate-300 hover:text-white">
+                    Sign Up
+                </button>
+            </div>
+
+            <!-- Alert Banner -->
+            <div id="auth-alert" class="hidden mb-4 p-3 rounded-xl bg-rose-500/20 border border-rose-500/50 text-rose-200 text-sm text-center font-medium"></div>
+
+            <!-- Sign In Form (Email + Password ONLY) -->
+            <form id="signin-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Email Address</label>
+                    <input type="email" id="signin-email" required placeholder="name@example.com"
+                           class="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Password</label>
+                    <input type="password" id="signin-password" required placeholder="••••••••"
+                           class="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition">
+                </div>
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-base transition shadow-lg shadow-amber-500/20 mt-2">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- Sign Up Form (Name + Email + Password) -->
+            <form id="signup-form" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Full Name / Username</label>
+                    <input type="text" id="signup-name" required autocomplete="off" placeholder="Enter your name..."
+                           class="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Email Address</label>
+                    <input type="email" id="signup-email" required placeholder="name@example.com"
+                           class="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Password</label>
+                    <input type="password" id="signup-password" required placeholder="Create a password..."
+                           class="w-full px-4 py-3 rounded-xl bg-slate-950/80 border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 transition">
+                </div>
+                <button type="submit" class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-base transition shadow-lg shadow-amber-500/20 mt-2">
+                    Sign Up
+                </button>
+            </form>
+        </section>
+
+        <!-- Dashboard: Quiz List -->
+        <section id="dashboard-view" class="hidden w-full space-y-6">
+            <!-- Delete Selection Action Bar -->
+            <div id="delete-bar" class="hidden items-center justify-between bg-rose-950/80 border border-rose-500/60 px-5 py-3.5 rounded-2xl backdrop-blur-md">
+                <div class="flex items-center gap-3 text-rose-200 font-bold text-sm sm:text-base">
+                    <i class="fa-solid fa-trash-can text-rose-400"></i>
+                    <span>Select competitions to delete</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="cancel-delete-btn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm transition">
+                        Cancel
+                    </button>
+                    <button id="confirm-delete-btn" class="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-sm transition shadow-lg">
+                        OK
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Competitions</h1>
+                <span id="quiz-count-badge" class="text-xs font-bold uppercase tracking-wider bg-white/10 text-amber-400 px-3 py-1 rounded-full">
+                    0 Available
+                </span>
+            </div>
+
+            <!-- Grid of Quizzes -->
+            <div id="quizzes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- Active Quiz View -->
+        <section id="quiz-view" class="hidden w-full max-w-2xl mx-auto bg-slate-900/90 backdrop-blur-xl border border-white/15 rounded-2xl p-6 sm:p-8 shadow-2xl">
+            <div class="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+                <span id="quiz-title-header" class="text-amber-400 font-black text-lg">titus class</span>
+                <span id="quiz-progress-badge" class="bg-slate-800 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-full">
+                    Question 1 of 7
+                </span>
+            </div>
+
+            <!-- Question Prompt -->
+            <h2 id="question-prompt" class="arabic-text text-xl sm:text-2xl font-bold text-white leading-relaxed mb-6"></h2>
+
+            <!-- Options Container -->
+            <div id="options-container" class="space-y-3 mb-8"></div>
+
+            <!-- Validation Warning -->
+            <p id="quiz-warning" class="hidden text-rose-400 text-sm font-bold mb-4 text-center">
+                Please select an answer before continuing.
+            </p>
+
+            <div class="flex justify-end">
+                <button id="next-question-btn" class="px-8 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-base transition shadow-lg shadow-amber-500/20">
+                    Next Question
+                </button>
+            </div>
+        </section>
+
+        <!-- Individual Quiz Result View (Shows ONLY their score for this quiz) -->
+        <section id="result-view" class="hidden w-full max-w-md mx-auto bg-slate-900/90 backdrop-blur-xl border border-white/15 rounded-2xl p-8 text-center shadow-2xl">
+            <div class="w-20 h-20 mx-auto mb-5 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 text-4xl">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 class="text-2xl font-black text-white mb-2">Competition Completed!</h2>
+            <p class="text-slate-400 text-sm mb-6">You answered correctly:</p>
+            <div id="final-quiz-score" class="text-5xl font-black text-emerald-400 mb-6 tracking-tight">
+                0 / 7
+            </div>
+            <button id="back-to-dashboard-btn" class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-base transition">
+                Back to Competitions
+            </button>
+        </section>
+
+    </main>
+
+    <!-- Secret Terminal Overlay & Drawer -->
+    <div id="terminal-backdrop" class="hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-50 transition-opacity"></div>
+    <div id="terminal-drawer" class="terminal-drawer fixed top-12 left-1/2 w-[92%] max-w-2xl bg-slate-950 border border-slate-700/80 rounded-2xl shadow-2xl z-50 overflow-hidden font-mono">
+        <div class="bg-slate-900 px-4 py-3 flex items-center justify-between border-b border-slate-800">
+            <div class="flex items-center gap-2 text-slate-400 text-xs font-bold">
+                <i class="fa-solid fa-terminal text-emerald-400"></i>
+                <span>SYSTEM CONSOLE</span>
+            </div>
+            <button id="close-terminal-btn" class="w-8 h-8 rounded-lg flex items-center justify-center text-rose-400 hover:bg-rose-500/20 transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        <div id="terminal-output" class="p-4 h-64 sm:h-80 overflow-y-auto text-sm space-y-2 text-sky-400">
+            <div class="text-rose-400 font-bold">This space is not designated for you. Input only.</div>
+        </div>
+        <div class="bg-slate-900/90 px-4 py-3 border-t border-slate-800 flex items-center gap-2">
+            <span class="text-emerald-400 font-bold">&gt;</span>
+            <input type="text" id="terminal-input" autocomplete="off" placeholder="Enter input..."
+                   class="flex-1 bg-transparent border-none text-white text-sm focus:outline-none">
+        </div>
+    </div>
+
+    <!-- Trash / Deleted Quizzes Modal -->
+    <div id="trash-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 items-center justify-center p-4">
+        <div class="w-full max-w-lg bg-slate-900 border border-white/15 rounded-2xl p-6 shadow-2xl">
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
+                <div class="flex items-center gap-2.5 text-lg font-black text-white">
+                    <i class="fa-solid fa-trash-arrow-up text-amber-400"></i>
+                    <span>Deleted Competitions</span>
+                </div>
+                <button id="close-trash-modal-btn" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">Click Restore to return a deleted competition to the main list.</p>
+            <div id="trash-list" class="space-y-2.5 max-h-64 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs & App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- Firebase Environment Config ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'titus-class-default';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Web Audio API Sound Effects ---
+        let audioCtx = null;
+        function playSound(type) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const now = audioCtx.currentTime;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(750, now);
+                    gain.gain.setValueAtTime(0.06, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+                    osc.start(now);
+                    osc.stop(now + 0.06);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.18); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(210, now);
+                    osc.frequency.exponentialRampToValueAtTime(120, now + 0.25);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'terminal') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.setValueAtTime(880, now + 0.07);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                    osc.start(now);
+                    osc.stop(now + 0.16);
+                } else if (type === 'finish') {
+                    const freqs = [523.25, 659.25, 783.99, 1046.50];
+                    freqs.forEach((f, idx) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(f, now + idx * 0.1);
+                        g.gain.setValueAtTime(0.16, now + idx * 0.1);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.1 + 0.3);
+                        o.start(now + idx * 0.1);
+                        o.stop(now + idx * 0.1 + 0.3);
+                    });
+                }
+            } catch (e) {
+                // Ignore audio block errors before user interaction
+            }
+        }
+
+        // --- Harder, Tricky Theological Questions for "titus class" ---
+        const DEFAULT_TITUS_QUIZ = {
+            id: 'titus_class_main',
+            title: 'titus class',
+            description: 'مسابقة معمقة في رسالة معلمنا بولس الرسول إلى تيطس وتدبير الكنيسة الأولى',
+            deleted: false,
+            questions: [
+                {
+                    text: 'لمن كتبت الرسالة وما هو الهدف الرئيسي منها؟',
+                    options: [
+                        'كتبت لتيموثاوس في أفسس لتثبيت قوانين العبادة الليتورجية ومواجهة التهوّد.',
+                        'كتبت لتيطس لتنظيم الأمور الكنسية وتعيين قسوس في المدن ومواجهة التعليم الكاذب.',
+                        'كتبت لتيطس في كورنثوس لحل الخلافات الإدارية بين الخدام وتنظيم جمع العطايا.',
+                        'كتبت لفيليمون وتيطس معاً لتدبير شؤون الكنائس المنزلية في آسيا الصغرى.'
+                    ],
+                    correctIndex: 1
+                },
+                {
+                    text: 'ما هي الظروف التي جعلت بولس يترك تيطس في مدينة كريت؟',
+                    options: [
+                        'بسبب اضطهاد اليهود المفاجئ لبولس واضطراره للهرب ليلاً إلى نيكوبوليس.',
+                        'لأن كنيسة كريت كانت تفتقر للرسل، فتركه بولس ليؤسسها من البداية ويكرز فيها لأول مرة.',
+                        'لأن جزيرة كريت كانت بحاجة لترتيب الأمور الكنسية الناقصة وتركه بولس ليكمل هذا العمل بعد مغادرته.',
+                        'بسبب مرض بولس الرسول واضطراره للبقاء في روما مع تفويض تيطس بإدارة كنائس اليونان.'
+                    ],
+                    correctIndex: 2
+                },
+                {
+                    text: 'إيه اللي كلف بولس الرسول بيه تيطس بخصوص الكنيسة؟',
+                    options: [
+                        'إقامة شيوخ (قسوس) في كل مدينة حسب الوصايا وتدبير أمور الخدمة.',
+                        'عزل الأساقفة القدامى في كريت واستبدالهم بشمامسة مرسلين من أورشليم.',
+                        'إرسال تقارير دورية لبطرس الرسول وتخصيص خزينة مستقلة لكل كنيسة محلية.',
+                        'إلزام المؤمنين من أصل أممي بحفظ شريعة الختان لتجنب عثرة اليهود في كريت.'
+                    ],
+                    correctIndex: 0
+                },
+                {
+                    text: 'بولس كان عايز تيطس يعمل إيه في مدينة كريت؟',
+                    options: [
+                        'أن يعتزل الجدال مع المعلمين الكذبة ويكتفي بالصلاة الفردية دون توبيخ علني.',
+                        'أن يغادر كريت سريعاً نحو دلماطية بمجرد انتهاء موسم الشتاء.',
+                        'أن ينظم الكنائس ويرد على المعلمين الكذبة ويضبط التعليم الصحيح.',
+                        'أن يؤسس مجمعاً لتعديل النصوص الرسولية بما يناسب ثقافة أهل كريت.'
+                    ],
+                    correctIndex: 2
+                },
+                {
+                    text: 'في رسالة بولس لتيموثاوس وتيطس (الإصحاح الأول)، بولس وصف نفسه بإيه؟',
+                    options: [
+                        'عبد الله ورسول يسوع المسيح حسب إيمان مختاري الله ومعرفة الحق الذي هو للتقوى.',
+                        'رسول الأمم المختار بموجب وصية مجمع أورشليم وشهادة التلاميذ الاثني عشر.',
+                        'معلم الناموس والنعمة المرسل إلى اليهود أولاً ثم اليونانيين بحسب التدبير القديم.',
+                        'أسقف الكنائس الجامعة والمفوض من الرسل لتفسير الأسرار الإلهية.'
+                    ],
+                    correctIndex: 0
+                },
+                {
+                    text: 'احنا اتعلمنا إيه من تيطس وأفعاله؟',
+                    options: [
+                        'الأمانة في العمل، الطاعة للوصية، والقدوة الحسنة في الخدمة والتعليم الصحيح.',
+                        'التشدد الحرفي في الطقوس وعدم قبول التائبين من أصحاب البدع مهما تابوا.',
+                        'الاعتماد على الحكمة الفلسفية اليونانية لإقناع المقاومين بدلاً من التعليم الصحيح.',
+                        'تجنب المواجهة مع المبتدعين حفاظاً على السلام الظاهري داخل الجماعة.'
+                    ],
+                    correctIndex: 0
+                },
+                {
+                    text: 'من هو الذي كتب الرسالة لتيطس؟',
+                    options: [
+                        'القديس لوقا الطبيب بإملاء من القديس برنابا في أنطاكية.',
+                        'الرسول بولس.',
+                        'القديس تيموثاوس بتكليف من بولس الرسول أثناء أسره الأول.',
+                        'القديس مرقس الرسول عند مروره بجزيرة كريت.'
+                    ],
+                    correctIndex: 1
+                }
+            ]
+        };
+
+        // --- App State ---
+        let fbUser = null;
+        let currentUserProfile = null; // { email, name, isCreator }
+        let allUsers = [];
+        let allQuizzes = [];
+        let allScores = [];
+
+        let isDeleteMode = false;
+        let activeQuiz = null;
+        let currentQuestionIdx = 0;
+        let currentQuizScore = 0;
+        let selectedOptionIdx = null;
+
+        // --- Firestore Collection References (Strict Rule 1 Paths) ---
+        const usersCol = collection(db, 'artifacts', appId, 'public', 'data', 'users');
+        const quizzesCol = collection(db, 'artifacts', appId, 'public', 'data', 'quizzes');
+        const scoresCol = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
+
+        // --- DOM Elements ---
+        const loadingView = document.getElementById('loading-view');
+        const authView = document.getElementById('auth-view');
+        const dashboardView = document.getElementById('dashboard-view');
+        const quizView = document.getElementById('quiz-view');
+        const resultView = document.getElementById('result-view');
+
+        // --- Helper: Parse Creator Code (`1x1x1x1`) ---
+        function parseNameAndCreator(rawName) {
+            const hasCreatorCode = rawName.includes('1x1x1x1');
+            const cleanName = rawName.replace(/1x1x1x1/g, '').trim();
+            return { cleanName, isCreator: hasCreatorCode };
+        }
+
+        // --- Helper: Safe Email Doc ID ---
+        function emailToDocId(email) {
+            return email.toLowerCase().trim().replace(/[^a-z0-9]/g, '_');
+        }
+
+        // --- Initialize Firebase Auth & Real-time Listeners ---
+        async function bootApp() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth initialization failed:", err);
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) return;
+            fbUser = user;
+
+            // Seed default quiz if not present in Firestore
+            const defaultQuizRef = doc(db, 'artifacts', appId, 'public', 'data', 'quizzes', DEFAULT_TITUS_QUIZ.id);
+            const defaultQuizSnap = await getDoc(defaultQuizRef);
+            if (!defaultQuizSnap.exists()) {
+                await setDoc(defaultQuizRef, DEFAULT_TITUS_QUIZ);
+            }
+
+            // Listen to Users
+            onSnapshot(usersCol, (snapshot) => {
+                allUsers = [];
+                snapshot.forEach(d => allUsers.push({ id: d.id, ...d.data() }));
+                restoreSavedSession();
+            }, (err) => console.error("Users snapshot error:", err));
+
+            // Listen to Quizzes
+            onSnapshot(quizzesCol, (snapshot) => {
+                allQuizzes = [];
+                snapshot.forEach(d => allQuizzes.push({ id: d.id, ...d.data() }));
+                if (currentUserProfile) {
+                    renderDashboardQuizzes();
+                    renderTrashList();
+                }
+            }, (err) => console.error("Quizzes snapshot error:", err));
+
+            // Listen to Global Scores
+            onSnapshot(scoresCol, (snapshot) => {
+                allScores = [];
+                snapshot.forEach(d => allScores.push({ id: d.id, ...d.data() }));
+            }, (err) => console.error("Scores snapshot error:", err));
+        });
+
+        let sessionChecked = false;
+        function restoreSavedSession() {
+            if (sessionChecked && currentUserProfile) return;
+            sessionChecked = true;
+
+            const savedEmail = sessionStorage.getItem('tc_logged_email') || window.name;
+            if (savedEmail) {
+                const found = allUsers.find(u => u.email.toLowerCase() === savedEmail.toLowerCase());
+                if (found) {
+                    currentUserProfile = found;
+                    showDashboard();
+                    return;
+                }
+            }
+            loadingView.classList.add('hidden');
+            authView.classList.remove('hidden');
+        }
+
+        // --- Auth Tabs & Form Handlers ---
+        const tabSignin = document.getElementById('tab-signin');
+        const tabSignup = document.getElementById('tab-signup');
+        const signinForm = document.getElementById('signin-form');
+        const signupForm = document.getElementById('signup-form');
+        const authAlert = document.getElementById('auth-alert');
+
+        function showAuthAlert(msg) {
+            authAlert.textContent = msg;
+            authAlert.classList.remove('hidden');
+        }
+
+        function hideAuthAlert() {
+            authAlert.classList.add('hidden');
+        }
+
+        tabSignin.addEventListener('click', () => {
+            playSound('click');
+            hideAuthAlert();
+            tabSignin.classList.add('bg-amber-500', 'text-slate-950');
+            tabSignin.classList.remove('text-slate-300');
+            tabSignup.classList.remove('bg-amber-500', 'text-slate-950');
+            tabSignup.classList.add('text-slate-300');
+            signinForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
+        });
+
+        tabSignup.addEventListener('click', () => {
+            playSound('click');
+            hideAuthAlert();
+            tabSignup.classList.add('bg-amber-500', 'text-slate-950');
+            tabSignup.classList.remove('text-slate-300');
+            tabSignin.classList.remove('bg-amber-500', 'text-slate-950');
+            tabSignin.classList.add('text-slate-300');
+            signupForm.classList.remove('hidden');
+            signinForm.classList.add('hidden');
+        });
+
+        // Sign Up Handler (Name + Email + Password)
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            playSound('click');
+            hideAuthAlert();
+
+            if (!fbUser) return;
+
+            const rawName = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim().toLowerCase();
+            const password = document.getElementById('signup-password').value;
+
+            const { cleanName, isCreator } = parseNameAndCreator(rawName);
+
+            if (!cleanName) {
+                showAuthAlert('Please enter a valid name.');
+                return;
+            }
+
+            // Check duplicate email or duplicate name
+            const emailExists = allUsers.some(u => u.email.toLowerCase() === email);
+            if (emailExists) {
+                showAuthAlert('This email is already registered! Please switch to Sign In.');
+                return;
+            }
+
+            const nameExists = allUsers.some(u => u.name.toLowerCase() === cleanName.toLowerCase());
+            if (nameExists) {
+                showAuthAlert('This name is already taken! Please choose another name.');
+                return;
+            }
+
+            const newUserDoc = {
+                name: cleanName,
+                email: email,
+                password: password,
+                isCreator: isCreator,
+                createdAt: Date.now()
+            };
+
+            try {
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', emailToDocId(email));
+                await setDoc(userRef, newUserDoc);
+                currentUserProfile = newUserDoc;
+                sessionStorage.setItem('tc_logged_email', email);
+                window.name = email;
+                showDashboard();
+            } catch (err) {
+                console.error(err);
+                showAuthAlert('Error creating account. Please try again.');
+            }
+        });
+
+        // Sign In Handler (Email + Password ONLY)
+        signinForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            playSound('click');
+            hideAuthAlert();
+
+            const email = document.getElementById('signin-email').value.trim().toLowerCase();
+            const password = document.getElementById('signin-password').value;
+
+            const foundUser = allUsers.find(u => u.email.toLowerCase() === email);
+            if (!foundUser) {
+                showAuthAlert('Account not found! Please Sign Up first to create an account.');
+                return;
+            }
+
+            if (foundUser.password !== password) {
+                showAuthAlert('Incorrect password! Please check your credentials.');
+                return;
+            }
+
+            currentUserProfile = foundUser;
+            sessionStorage.setItem('tc_logged_email', email);
+            window.name = email;
+            showDashboard();
+        });
+
+        // Sign Out
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            playSound('click');
+            sessionStorage.removeItem('tc_logged_email');
+            window.name = '';
+            currentUserProfile = null;
+            isDeleteMode = false;
+
+            document.getElementById('user-badge-container').classList.add('hidden');
+            document.getElementById('logout-btn').classList.add('hidden');
+            dashboardView.classList.add('hidden');
+            quizView.classList.add('hidden');
+            resultView.classList.add('hidden');
+            authView.classList.remove('hidden');
+        });
+
+        // --- Dashboard & Quizzes ---
+        function showDashboard() {
+            loadingView.classList.add('hidden');
+            authView.classList.add('hidden');
+            quizView.classList.add('hidden');
+            resultView.classList.add('hidden');
+            dashboardView.classList.remove('hidden');
+
+            // Update Header User Info
+            const badgeContainer = document.getElementById('user-badge-container');
+            const headerName = document.getElementById('header-username');
+            const creatorTag = document.getElementById('header-creator-tag');
+
+            headerName.textContent = currentUserProfile.name;
+            if (currentUserProfile.isCreator) {
+                creatorTag.classList.remove('hidden');
+                creatorTag.classList.add('inline-flex');
+            } else {
+                creatorTag.classList.add('hidden');
+                creatorTag.classList.remove('inline-flex');
+            }
+
+            badgeContainer.classList.remove('hidden');
+            badgeContainer.classList.add('flex');
+            document.getElementById('logout-btn').classList.remove('hidden');
+
+            renderDashboardQuizzes();
+        }
+
+        function renderDashboardQuizzes() {
+            const grid = document.getElementById('quizzes-grid');
+            const activeQuizzes = allQuizzes.filter(q => !q.deleted);
+            document.getElementById('quiz-count-badge').textContent = `${activeQuizzes.length} Available`;
+
+            grid.innerHTML = '';
+            if (activeQuizzes.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 bg-slate-900/60 rounded-2xl border border-white/10 text-slate-400">
+                        No active competitions available right now.
+                    </div>
+                `;
+                return;
+            }
+
+            activeQuizzes.forEach(quiz => {
+                const card = document.createElement('div');
+                card.className = 'relative bg-slate-900/80 backdrop-blur-lg border border-white/15 hover:border-amber-500/60 rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 shadow-xl';
+
+                const checkboxHtml = isDeleteMode
+                    ? `<label class="absolute top-4 right-4 cursor-pointer flex items-center gap-2 bg-rose-950/90 border border-rose-500 px-2.5 py-1 rounded-lg">
+                           <input type="checkbox" class="quiz-del-checkbox w-4 h-4 accent-rose-500" value="${quiz.id}">
+                           <span class="text-xs font-bold text-rose-200">Select</span>
+                       </label>`
+                    : '';
+
+                card.innerHTML = `
+                    ${checkboxHtml}
+                    <div>
+                        <div class="w-11 h-11 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg mb-4">
+                            <i class="fa-solid fa-scroll"></i>
+                        </div>
+                        <h3 class="text-xl font-black text-amber-400 mb-2">${quiz.title}</h3>
+                        <p class="arabic-text text-slate-300 text-sm leading-relaxed mb-6">${quiz.description}</p>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-4">
+                            <i class="fa-solid fa-list-check text-amber-500"></i>
+                            <span>${quiz.questions.length} Questions</span>
+                        </div>
+                        <button class="start-quiz-btn w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm transition shadow-lg shadow-amber-500/20">
+                            Start Competition
+                        </button>
+                    </div>
+                `;
+
+                card.querySelector('.start-quiz-btn').addEventListener('click', () => startQuiz(quiz));
+                grid.appendChild(card);
+            });
+        }
+
+        // --- Active Quiz Logic ---
+        function startQuiz(quiz) {
+            playSound('click');
+            activeQuiz = quiz;
+            currentQuestionIdx = 0;
+            currentQuizScore = 0;
+            selectedOptionIdx = null;
+
+            dashboardView.classList.add('hidden');
+            resultView.classList.add('hidden');
+            quizView.classList.remove('hidden');
+
+            document.getElementById('quiz-title-header').textContent = quiz.title;
+            renderCurrentQuestion();
+        }
+
+        function renderCurrentQuestion() {
+            selectedOptionIdx = null;
+            document.getElementById('quiz-warning').classList.add('hidden');
+
+            const q = activeQuiz.questions[currentQuestionIdx];
+            document.getElementById('quiz-progress-badge').textContent = `Question ${currentQuestionIdx + 1} of ${activeQuiz.questions.length}`;
+            document.getElementById('question-prompt').textContent = q.text;
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            q.options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'arabic-text w-full text-right p-4 rounded-xl bg-slate-950/75 border border-white/15 hover:border-amber-500/60 text-slate-100 text-base font-semibold transition flex items-center justify-between gap-3';
+                btn.innerHTML = `
+                    <span>${optText}</span>
+                    <i class="fa-regular fa-circle text-slate-500 text-lg shrink-0"></i>
+                `;
+
+                btn.addEventListener('click', () => {
+                    playSound('click');
+                    selectedOptionIdx = idx;
+                    document.getElementById('quiz-warning').classList.add('hidden');
+
+                    Array.from(optionsContainer.children).forEach(child => {
+                        child.classList.remove('border-amber-500', 'bg-amber-500/15');
+                        child.classList.add('border-white/15', 'bg-slate-950/75');
+                        const icon = child.querySelector('i');
+                        icon.className = 'fa-regular fa-circle text-slate-500 text-lg shrink-0';
+                    });
+
+                    btn.classList.remove('border-white/15', 'bg-slate-950/75');
+                    btn.classList.add('border-amber-500', 'bg-amber-500/15');
+                    const activeIcon = btn.querySelector('i');
+                    activeIcon.className = 'fa-solid fa-circle-check text-amber-400 text-lg shrink-0';
+                });
+
+                optionsContainer.appendChild(btn);
+            });
+
+            const nextBtn = document.getElementById('next-question-btn');
+            nextBtn.textContent = (currentQuestionIdx === activeQuiz.questions.length - 1) ? 'Finish Competition' : 'Next Question';
+        }
+
+        document.getElementById('next-question-btn').addEventListener('click', async () => {
+            if (selectedOptionIdx === null) {
+                document.getElementById('quiz-warning').classList.remove('hidden');
+                return;
+            }
+
+            const q = activeQuiz.questions[currentQuestionIdx];
+            if (selectedOptionIdx === q.correctIndex) {
+                playSound('correct');
+                currentQuizScore++;
+            } else {
+                playSound('wrong');
+            }
+
+            currentQuestionIdx++;
+            if (currentQuestionIdx < activeQuiz.questions.length) {
+                renderCurrentQuestion();
+            } else {
+                await finishQuiz();
+            }
+        });
+
+        async function finishQuiz() {
+            playSound('finish');
+            quizView.classList.add('hidden');
+            resultView.classList.remove('hidden');
+
+            // Show ONLY how many questions they got right out of total for this quiz
+            document.getElementById('final-quiz-score').textContent = `${currentQuizScore} / ${activeQuiz.questions.length}`;
+
+            // Save score record to shared Firestore database (keyed by user email + quizId so cumulative score across quizzes works cleanly)
+            if (fbUser && currentUserProfile) {
+                try {
+                    const scoreDocId = `${emailToDocId(currentUserProfile.email)}_${activeQuiz.id}`;
+                    const scoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'scores', scoreDocId);
+                    await setDoc(scoreRef, {
+                        email: currentUserProfile.email,
+                        name: currentUserProfile.name,
+                        isCreator: Boolean(currentUserProfile.isCreator),
+                        quizId: activeQuiz.id,
+                        quizTitle: activeQuiz.title,
+                        correct: currentQuizScore,
+                        total: activeQuiz.questions.length,
+                        updatedAt: Date.now()
+                    });
+                } catch (err) {
+                    console.error("Error saving score:", err);
+                }
+            }
+        }
+
+        document.getElementById('back-to-dashboard-btn').addEventListener('click', () => {
+            playSound('click');
+            showDashboard();
+        });
+
+        // --- Secret Terminal Logic ---
+        const terminalBackdrop = document.getElementById('terminal-backdrop');
+        const terminalDrawer = document.getElementById('terminal-drawer');
+        const terminalInput = document.getElementById('terminal-input');
+        const terminalOutput = document.getElementById('terminal-output');
+
+        function openTerminal() {
+            playSound('terminal');
+            terminalBackdrop.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                terminalDrawer.classList.add('open');
+                terminalInput.focus();
+            });
+        }
+
+        function closeTerminal() {
+            playSound('click');
+            terminalDrawer.classList.remove('open');
+            setTimeout(() => {
+                terminalBackdrop.classList.add('hidden');
+            }, 350);
+        }
+
+        document.getElementById('terminal-trigger').addEventListener('click', openTerminal);
+        document.getElementById('close-terminal-btn').addEventListener('click', closeTerminal);
+        terminalBackdrop.addEventListener('click', closeTerminal);
+
+        function appendTerminalLine(content, isHtml = false) {
+            const line = document.createElement('div');
+            if (isHtml) {
+                line.innerHTML = content;
+            } else {
+                line.textContent = content;
+            }
+            terminalOutput.appendChild(line);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        terminalInput.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            const rawCmd = terminalInput.value.trim();
+            terminalInput.value = '';
+            if (!rawCmd) return;
+
+            playSound('click');
+            appendTerminalLine(`> ${rawCmd}`);
+            executeTerminalCommand(rawCmd);
+        });
+
+        function executeTerminalCommand(cmd) {
+            if (cmd === 'الدرجات') {
+                renderGlobalCumulativeScores();
+            } else if (cmd.toLowerCase() === 'del') {
+                if (!currentUserProfile) {
+                    appendTerminalLine('Authentication required.');
+                    return;
+                }
+                isDeleteMode = true;
+                document.getElementById('delete-bar').classList.remove('hidden');
+                document.getElementById('delete-bar').classList.add('flex');
+                renderDashboardQuizzes();
+                appendTerminalLine('Selection mode activated.');
+                closeTerminal();
+            } else if (cmd.toLowerCase() === 'clear') {
+                terminalOutput.innerHTML = `<div class="text-rose-400 font-bold">This space is not designated for you. Input only.</div>`;
+            } else {
+                appendTerminalLine('Access denied.');
+            }
+        }
+
+        function renderGlobalCumulativeScores() {
+            if (allScores.length === 0) {
+                appendTerminalLine('No competition records found yet.');
+                return;
+            }
+
+            // Aggregate cumulative scores across ALL quizzes for each player
+            const playerMap = new Map();
+
+            allScores.forEach(entry => {
+                const key = entry.email.toLowerCase();
+                // Sync latest user creator badge & display name from users collection if available
+                const userProfile = allUsers.find(u => u.email.toLowerCase() === key);
+                const displayName = userProfile ? userProfile.name : entry.name;
+                const creatorFlag = userProfile ? Boolean(userProfile.isCreator) : Boolean(entry.isCreator);
+
+                if (!playerMap.has(key)) {
+                    playerMap.set(key, {
+                        name: displayName,
+                        isCreator: creatorFlag,
+                        totalCorrect: 0,
+                        totalQuestions: 0,
+                        quizzesPlayed: 0
+                    });
+                }
+
+                const agg = playerMap.get(key);
+                agg.totalCorrect += Number(entry.correct || 0);
+                agg.totalQuestions += Number(entry.total || 0);
+                agg.quizzesPlayed += 1;
+            });
+
+            // Sort descending by totalCorrect, then by percentage
+            const rankedPlayers = Array.from(playerMap.values()).sort((a, b) => {
+                if (b.totalCorrect !== a.totalCorrect) return b.totalCorrect - a.totalCorrect;
+                const pctA = a.totalQuestions > 0 ? a.totalCorrect / a.totalQuestions : 0;
+                const pctB = b.totalQuestions > 0 ? b.totalCorrect / b.totalQuestions : 0;
+                return pctB - pctA;
+            });
+
+            let html = `<div class="arabic-text mt-2 mb-1 text-amber-400 font-bold border-b border-slate-800 pb-1">--- ترتيب المراكز والدرجات التراكمية ---</div>`;
+
+            rankedPlayers.forEach((p, idx) => {
+                let rankLabel = `المركز ${idx + 1}`;
+                if (idx === 0) rankLabel = '🥇 المركز الأول';
+                else if (idx === 1) rankLabel = '🥈 المركز الثاني';
+                else if (idx === 2) rankLabel = '🥉 المركز الثالث';
+
+                const creatorBadge = p.isCreator
+                    ? `<span class="inline-flex items-center gap-1 text-sky-400 text-xs font-bold ml-1.5"><i class="fa-solid fa-circle-check"></i> Creator</span>`
+                    : '';
+
+                html += `
+                    <div class="arabic-text flex items-center justify-between py-2 border-b border-slate-800/80 text-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-amber-300">${rankLabel}:</span>
+                            <span class="font-bold">${p.name}</span>
+                            ${creatorBadge}
+                        </div>
+                        <div class="font-mono font-bold text-emerald-400" dir="ltr">
+                            ${p.totalCorrect} / ${p.totalQuestions}
+                        </div>
+                    </div>
+                `;
+            });
+
+            appendTerminalLine(html, true);
+        }
+
+        // --- Multi-Select Delete & Trash Restore ---
+        document.getElementById('cancel-delete-btn').addEventListener('click', () => {
+            playSound('click');
+            isDeleteMode = false;
+            document.getElementById('delete-bar').classList.add('hidden');
+            document.getElementById('delete-bar').classList.remove('flex');
+            renderDashboardQuizzes();
+        });
+
+        document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
+            playSound('click');
+            const checkedBoxes = document.querySelectorAll('.quiz-del-checkbox:checked');
+            const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+            isDeleteMode = false;
+            document.getElementById('delete-bar').classList.add('hidden');
+            document.getElementById('delete-bar').classList.remove('flex');
+
+            for (const qId of selectedIds) {
+                const qRef = doc(db, 'artifacts', appId, 'public', 'data', 'quizzes', qId);
+                await updateDoc(qRef, { deleted: true });
+            }
+
+            renderDashboardQuizzes();
+            openTrashModal();
+        });
+
+        function openTrashModal() {
+            renderTrashList();
+            const modal = document.getElementById('trash-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeTrashModal() {
+            playSound('click');
+            const modal = document.getElementById('trash-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        document.getElementById('close-trash-modal-btn').addEventListener('click', closeTrashModal);
+
+        function renderTrashList() {
+            const list = document.getElementById('trash-list');
+            const deletedQuizzes = allQuizzes.filter(q => q.deleted);
+            list.innerHTML = '';
+
+            if (deletedQuizzes.length === 0) {
+                list.innerHTML = `<div class="text-center py-6 text-slate-400 text-sm">No deleted competitions found.</div>`;
+                return;
+            }
+
+            deletedQuizzes.forEach(quiz => {
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-slate-950/80 border border-white/10 px-4 py-3 rounded-xl';
+                row.innerHTML = `
+                    <span class="font-bold text-slate-200">${quiz.title}</span>
+                    <button class="restore-btn px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition">
+                        Restore / استرجاع
+                    </button>
+                `;
+                row.querySelector('.restore-btn').addEventListener('click', async () => {
+                    playSound('click');
+                    const qRef = doc(db, 'artifacts', appId, 'public', 'data', 'quizzes', quiz.id);
+                    await updateDoc(qRef, { deleted: false });
+                });
+                list.appendChild(row);
+            });
+        }
+
+        // Start App
+        bootApp();
+    </script>
+</body>
+</html>
